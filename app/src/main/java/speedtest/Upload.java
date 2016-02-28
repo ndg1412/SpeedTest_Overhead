@@ -75,7 +75,7 @@ public class Upload {
     public void Upload_Run() {
         uploadTestListenerList.onUploadProgress(0);
 
-        BlockingQueue queue = new LinkedBlockingQueue(3);
+        BlockingQueue queue = new LinkedBlockingQueue(Config.NUMBER_QUEUE_THREAD);
         Producer procedure = new Producer(queue, sizes);
         Consumer consumer = new Consumer(queue, total_size);
         Thread thPro = new Thread(procedure);
@@ -117,8 +117,6 @@ public class Upload {
         long wlan_tx_end = Network.getTxByte(Config.WLAN_IF);
         long lte_tx_end = Network.getTxByte(sLteName);
         float transferRate_bps = getBandwidth();
-//        Log.d(TAG, "total_size: " + total_size);
-//        Log.d(TAG, "finish_size: " + finish_size);
 //        float transfer = (finish_size * 8) / ((timeEnd - timeStart) / 1000f)/1000000;
         if(wlan_tx_end < wlan_tx_first)
             wlan_tx_end += Config.ULONG_MAX;

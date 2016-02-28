@@ -50,4 +50,6 @@ public class Config {
     public static int RADIUS = 120; //in dpi unit
 
     public static long ULONG_MAX = 4294967295l;
+
+    public static int NUMBER_QUEUE_THREAD = 6;
 }
