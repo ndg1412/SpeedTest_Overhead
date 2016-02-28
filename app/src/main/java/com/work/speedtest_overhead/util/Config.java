@@ -51,5 +51,6 @@ public class Config {
 
     public static long ULONG_MAX = 4294967295l;
 
-    public static int NUMBER_QUEUE_THREAD = 6;
+    public static int NUMBER_QUEUE_THREAD_DOWNLOAD = 6;
+    public static int NUMBER_QUEUE_THREAD_UPLOAD = 6;
 }

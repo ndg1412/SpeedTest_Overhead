@@ -72,7 +72,7 @@ public class Download {
     public void Download_Run() {
         downloadTestListenerList.onDownloadProgress(0);
 
-        BlockingQueue queue = new LinkedBlockingQueue(Config.NUMBER_QUEUE_THREAD);
+        BlockingQueue queue = new LinkedBlockingQueue(Config.NUMBER_QUEUE_THREAD_DOWNLOAD);
         Producer procedure = new Producer(queue, files);
         Consumer consumer = new Consumer(queue, total_size);
         Thread thPro = new Thread(procedure);
@@ -97,7 +97,7 @@ public class Download {
                 if(lte < lte_rx)
                     lte += Config.ULONG_MAX;
                 if((tmp_wlan != 0) || (tmp_lte != 0)) {
-                    float speed = ((wlan + lte - wlan_rx - lte_rx) * 8 / 1000000 * (1000 / (Config.TIMER_SLEEP)));
+                    float speed = ((wlan + lte - wlan_rx - lte_rx) * 8 / 1000000 * (1000f / (Config.TIMER_SLEEP)));
                     lMax.add(speed);
                     downloadTestListenerList.onDownloadUpdate(speed);
                     wlan_rx = tmp_wlan;
@@ -151,7 +151,6 @@ public class Download {
                 socket.setReuseAddress(true);
 
                 socket.setKeepAlive(true);
-                Log.d(TAG, "using port: " + port);
                 socket.connect(new InetSocketAddress(host, port));
 //                socket.connect(new InetSocketAddress(host, port), 10*1000);
                 OutputStream outputStream = socket.getOutputStream();

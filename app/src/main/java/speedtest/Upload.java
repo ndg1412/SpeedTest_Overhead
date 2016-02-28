@@ -57,17 +57,18 @@ public class Upload {
     }
 
     public String Create_Head(int size) {
-        String uploadRequest = "POST " + uri + " HTTP/1.1\r\n" + "Host: " + host + "\r\nAccept: */*\r\nContent-Length: " + size + "\r\n\r\n";
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("POST %s HTTP/1.1 \r\n");
-//        sb.append("Host :%s \r\n");
-//        sb.append("Accept: */*\r\n");
-//        sb.append("Content-Length: %s \r\n");
-//        sb.append("Content-Type: application/x-www-form-urlencoded\r\n");
+//        String uploadRequest = "POST " + uri + " HTTP/1.1\r\n" + "Host: " + host + "\r\nAccept: */*\r\nContent-Length: " + size + "\r\n\r\n";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("POST %s HTTP/1.1 \r\n");
+        sb.append("Host :%s \r\n");
+        sb.append("Accept: text/*\r\n");
+        sb.append("Content-Length: %s \r\n");
+        sb.append("Content-Type: application/x-www-form-urlencoded\r\n");
 //        sb.append("Expect: 100-continue\r\n");
-//        sb.append("\r\n");
+        sb.append("\r\n");
 //
-//        String uploadRequest = String.format(sb.toString(), uri, host, size);
+        String uploadRequest = String.format(sb.toString(), uri, host, size);
 
         return uploadRequest;
     }
@@ -75,7 +76,7 @@ public class Upload {
     public void Upload_Run() {
         uploadTestListenerList.onUploadProgress(0);
 
-        BlockingQueue queue = new LinkedBlockingQueue(Config.NUMBER_QUEUE_THREAD);
+        BlockingQueue queue = new LinkedBlockingQueue(Config.NUMBER_QUEUE_THREAD_UPLOAD);
         Producer procedure = new Producer(queue, sizes);
         Consumer consumer = new Consumer(queue, total_size);
         Thread thPro = new Thread(procedure);
@@ -98,7 +99,7 @@ public class Upload {
                     wlan += Config.ULONG_MAX;
                 if(lte < lte_tx)
                     lte += Config.ULONG_MAX;
-                float speed = ((wlan + lte - wlan_tx - lte_tx)*8/1000000*(1000/Config.TIMER_SLEEP));
+                float speed = ((wlan + lte - wlan_tx - lte_tx)*8/1000000*(1000f/Config.TIMER_SLEEP));
                 lMax.add(speed);
                 uploadTestListenerList.onUploadUpdate(speed);
                 wlan_tx = tmp_wlan;
@@ -140,8 +141,9 @@ public class Upload {
         @Override
         public void run() {
             String request = Create_Head(size);
-            RandomGen random = new RandomGen(size);
-            byte[] buf = random.getBuf();
+            /*RandomGen random = new RandomGen(size);
+            byte[] buf = random.getBuf();*/
+            byte[] buf = new byte[size];
             Socket socket = null;
             try {
                 socket = new Socket();
@@ -155,10 +157,10 @@ public class Upload {
                 outputStream.flush();
                 /*outputStream.write(buf);
                 outputStream.flush();*/
-                for(int i = 0; i < buf.length; i = i + 10000) {
-                    outputStream.write(buf, i, 10000);
+                for(int i = 0; i < buf.length; i = i + 50000) {
+                    outputStream.write(buf, i, 50000);
                     outputStream.flush();
-                    total_upload += 10000;
+                    total_upload += 50000;
                     uploadTestListenerList.onUploadProgress((int)(total_upload * 100 / total_size));
                 }
                 HttpFrame frame = new HttpFrame();

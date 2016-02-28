@@ -76,8 +76,6 @@ public class SpeedActivity extends Activity {
         ibStartSpeed = (ImageButton) findViewById(R.id.ibStartSpeed);
         ibStartSpeed.setOnClickListener(startListener);
         SettingServer(context);
-
-
     }
 
     @Override
@@ -202,6 +200,7 @@ public class SpeedActivity extends Activity {
 
     public void SelectTest(Context context) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setCancelable(false);
         builder.setTitle("Select Test");
         final String[] list = context.getResources().getStringArray(R.array.list_select_test);
         builder.setSingleChoiceItems(list, -1, new DialogInterface.OnClickListener() {
