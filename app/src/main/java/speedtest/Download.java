@@ -40,7 +40,6 @@ public class Download {
     List<Float> lMax = new ArrayList<Float>();
     long wlan_rx = 0, lte_rx;
     long wlan_rx_first = 0, lte_rx_first;
-//    int iCheckt_Timer = 1;
 
     private IDownloadListener downloadTestListenerList;
     public void addDownloadTestListener(IDownloadListener listener) {
@@ -73,7 +72,7 @@ public class Download {
     public void Download_Run() {
         downloadTestListenerList.onDownloadProgress(0);
 
-        BlockingQueue queue = new LinkedBlockingQueue(3);
+        BlockingQueue queue = new LinkedBlockingQueue(6);
         Producer procedure = new Producer(queue, files);
         Consumer consumer = new Consumer(queue, total_size);
         Thread thPro = new Thread(procedure);
@@ -89,22 +88,19 @@ public class Download {
         tiDownload.schedule(new TimerTask() {
             @Override
             public void run() {
-                float download = (float)((float)total_download*8/1000000);
-//                lMax.add(download);
-//                downloadTestListenerList.onDownloadUpdate(download);
-                total_download = 0;
                 long tmp_wlan = Network.getRxByte(Config.WLAN_IF);
                 long tmp_lte = Network.getRxByte(sLteName);
+                if(tmp_wlan < wlan_rx)
+                    tmp_wlan = Config.ULONG_MAX + wlan_rx;
+                if(tmp_lte < lte_rx)
+                    tmp_lte = Config.ULONG_MAX + lte_rx;
                 if((tmp_wlan != 0) || (tmp_lte != 0)) {
                     float speed = ((tmp_wlan + tmp_lte - wlan_rx - lte_rx) * 8 / 1000000 * (1000 / (Config.TIMER_SLEEP)));
                     lMax.add(speed);
                     downloadTestListenerList.onDownloadUpdate(speed);
                     wlan_rx = tmp_wlan;
                     lte_rx = tmp_lte;
-//                    iCheckt_Timer = 1;
                 }
-//                else
-//                    iCheckt_Timer++;
             }
         }, 0, Config.TIMER_SLEEP);
         try {
@@ -142,7 +138,6 @@ public class Download {
         }
         @Override
         public void run() {
-//            Log.d(TAG, "Do_Download file: " + file);
             String request = Create_Head(file);
 
             Socket socket = null;
@@ -169,7 +164,6 @@ public class Download {
                 long totalPackets = 0;
                 int frameLength = httpFrame.getContentLength();
                 while ((read = socket.getInputStream().read(buffer)) != -1) {
-                    total_download += read;
                     totalPackets += read;
 
                     speed_size += read;
@@ -232,7 +226,6 @@ public class Download {
                 try {
                     Do_Download down = (Do_Download)queue.take();
                     while (down.isAlive()) {
-//                        up.join(100);
                         down.join(100);
                     }
                     finish_size += down.getDownloadSize();

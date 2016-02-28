@@ -31,7 +31,7 @@ public class Upload {
     int[] sizes;
     long total_size = 0;
     long finish_size = 0;
-    int total_upload = 0;
+    long total_upload = 0;
     long wlan_tx = 0, lte_tx;
     long wlan_tx_first = 0, lte_tx_first;
     String sLteName = null;
@@ -91,9 +91,13 @@ public class Upload {
             public void run() {
                 long tmp_wlan = Network.getTxByte(Config.WLAN_IF);
                 long tmp_lte = Network.getTxByte(sLteName);
+                if(tmp_wlan < wlan_tx)
+                    tmp_wlan = Config.ULONG_MAX + wlan_tx;
+                if(tmp_lte < lte_tx)
+                    tmp_lte = Config.ULONG_MAX + lte_tx;
                 float speed = ((tmp_wlan + tmp_lte - wlan_tx - lte_tx)*8/1000000*(1000/Config.TIMER_SLEEP));
                 lMax.add(speed);
-                Log.d(TAG, "speed get byte: " + speed);
+                uploadTestListenerList.onUploadUpdate(speed);
                 wlan_tx = tmp_wlan;
                 lte_tx = tmp_lte;
             }
@@ -148,13 +152,14 @@ public class Upload {
                 OutputStream outputStream = socket.getOutputStream();
                 outputStream.write(request.getBytes());
                 outputStream.flush();
-                outputStream.write(buf);
-                outputStream.flush();
-//                for(int i = 0; i < buf.length; i = i + 10000) {
-//                    outputStream.write(buf, i, 10000);
-//                    outputStream.flush();
-//                    total_upload += 10000;
-//                }
+                /*outputStream.write(buf);
+                outputStream.flush();*/
+                for(int i = 0; i < buf.length; i = i + 10000) {
+                    outputStream.write(buf, i, 10000);
+                    outputStream.flush();
+                    total_upload += 10000;
+                    uploadTestListenerList.onUploadProgress((int)(total_upload * 100 / total_size));
+                }
                 HttpFrame frame = new HttpFrame();
 
                 HttpStates httpStates = frame.parseHttp(socket.getInputStream());
@@ -223,7 +228,6 @@ public class Upload {
                         up.join(100);
                     }
                     finish_size += up.getUploadSize();
-                    uploadTestListenerList.onUploadProgress((int)(100*finish_size/total_size));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

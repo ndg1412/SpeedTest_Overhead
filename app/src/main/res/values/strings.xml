@@ -15,4 +15,9 @@
     <string name="best_server">Best Server</string>
     <string name="wifi">Wifi</string>
     <string name="lte">LTE</string>
+    <string-array name="list_select_test">
+        <item>Download</item>
+        <item>Upload</item>
+
+    </string-array>
 </resources>

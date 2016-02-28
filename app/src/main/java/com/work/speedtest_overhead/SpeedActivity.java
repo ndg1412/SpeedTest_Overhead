@@ -1,8 +1,10 @@
 package com.work.speedtest_overhead;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -37,9 +39,10 @@ import speedtest.Upload;
 public class SpeedActivity extends Activity {
     private static final String TAG = "SpeedActivity";
     Context context;
-    RelativeLayout rlDownloadSpeed, rlUploadSpeed;
+    RelativeLayout rlDownloadSpeed, rlUploadSpeed, rlProgress;
     TextView tvDownloadMaxResult, tvDownloadAvgResult, tvDownloadWifi, tvDownloadLte;
-    TextView tvUploadMaxResult, tvUploadAvgResult;
+    TextView tvUploadMaxResult, tvUploadAvgResult, tvUploadWifi, tvUploadLte;
+    TextView tvProgressText;
     ProgressBar pbStatus;
     ImageButton ibStartSpeed;
     AsyncTask<Void, Void, String> atSpeedTest;
@@ -62,6 +65,12 @@ public class SpeedActivity extends Activity {
         tvDownloadLte = (TextView) findViewById(R.id.tvDownloadLte);
         tvUploadMaxResult = (TextView) findViewById(R.id.tvUploadMaxResult);
         tvUploadAvgResult = (TextView) findViewById(R.id.tvUploadAvgResult);
+        tvUploadWifi = (TextView) findViewById(R.id.tvUploadWifi);
+        tvUploadLte = (TextView) findViewById(R.id.tvUploadLte);
+
+        rlProgress = (RelativeLayout) findViewById(R.id.rlProgress);
+        tvProgressText = (TextView) findViewById(R.id.tvProgressText);
+
         svSpeedDisplay = (SpeedView) findViewById(R.id.svSpeedDisplay);
         pbStatus = (ProgressBar) findViewById(R.id.pbStatus);
         ibStartSpeed = (ImageButton) findViewById(R.id.ibStartSpeed);
@@ -90,7 +99,8 @@ public class SpeedActivity extends Activity {
 
     final Handler hDownload = new Handler() {
         public void handleMessage(Message msg) {
-            pbStatus.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.GONE);
+            tvProgressText.setText("Download");
             rlDownloadSpeed.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
             tvDownloadMaxResult.setText(String.format("Max:     %.2fMbps", object.getMax()));
@@ -103,11 +113,14 @@ public class SpeedActivity extends Activity {
 
     final Handler hUpload = new Handler() {
         public void handleMessage(Message msg) {
-            pbStatus.setVisibility(View.GONE);
+            rlProgress.setVisibility(View.GONE);
+            tvProgressText.setText("Upload");
             rlUploadSpeed.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
             tvUploadMaxResult.setText(String.format("Max:     %.2fMbps", object.getMax()));
             tvUploadAvgResult.setText(String.format("Avg:     %.2fMbps", object.getAvg()));
+            tvUploadWifi.setText(String.format("Wifi:     %.2fMbps", object.getWifi()));
+            tvUploadLte.setText(String.format("Lte:     %.2fMbps", object.getLte()));
             svSpeedDisplay.setValue(0);
         }
     };
@@ -115,14 +128,14 @@ public class SpeedActivity extends Activity {
     final Handler hStatus = new Handler() {
         public void handleMessage(Message msg) {
             SpeedData data = (SpeedData)msg.obj;
-            pbStatus.setVisibility(View.VISIBLE);
+            rlProgress.setVisibility(View.VISIBLE);
         }
     };
 
     final Handler hButton = new Handler() {
         public void handleMessage(Message msg) {
             SpeedData data = (SpeedData)msg.obj;
-            pbStatus.setVisibility(View.VISIBLE);
+            rlProgress.setVisibility(View.VISIBLE);
             ibStartSpeed.setVisibility(View.VISIBLE);
         }
     };
@@ -131,92 +144,11 @@ public class SpeedActivity extends Activity {
     public OnClickListener startListener = new OnClickListener() {
         @Override
         public void onClick(View v) {
-            tvDownloadMaxResult.setText("");
-            tvDownloadAvgResult.setText("");
             rlDownloadSpeed.setVisibility(View.GONE);
+            rlUploadSpeed.setVisibility(View.GONE);
+
             if(!isRunning) {
-                atSpeedTest = new AsyncTask<Void, Void, String>() {
-                    @Override
-                    protected String doInBackground(Void... params) {
-                        isRunning = true;
-//                    Log.d(TAG, "uri download: " + sdServer.getUriDownload());
-//                    Download down = new Download(sdServer.getHost(), 80, sdServer.getUriDownload(),  Config.DOWNLOAD_FILE);
-                        String ip = prefs.getString(Config.PREF_KEY_SERVER_HOST, null);
-                        int port = prefs.getInt(Config.PREF_KEY_SERVER_PORT, 0);
-                        Log.d(TAG, "ip: " + ip + ", port: " + port);
-                        Download down = new Download(ip, port, "/speedtest/", Config.DOWNLOAD_FILE);
-                        down.addDownloadTestListener(new IDownloadListener() {
-                            @Override
-                            public void onDownloadPacketsReceived(float transferRateBitPerSeconds, float wifi_avg, float lte_avg) {
-                                Log.d(TAG, "Download [ OK ]");
-                                Log.d(TAG, "download transfer rate  : " + transferRateBitPerSeconds + " Mbit/second");
-                                Log.d(TAG, "##################################################################");
-
-                                UpDownObject data = new UpDownObject(transferRateBitPerSeconds, wifi_avg, lte_avg);
-                                Message msg = new Message();
-                                msg.obj = data;
-                                hDownload.sendMessage(msg);
-                            }
-
-                            @Override
-                            public void onDownloadError(int errorCode, String message) {
-
-                            }
-
-                            @Override
-                            public void onDownloadProgress(int percent) {
-//                            Log.d(TAG, "Download  percent: " + percent);
-                                if (percent == 0) {
-                                    Message msg = new Message();
-                                    hStatus.sendMessage(msg);
-                                }
-                                pbStatus.setProgress(percent);
-                            }
-
-                            @Override
-                            public void onDownloadUpdate(float speed) {
-                                Log.d(TAG, "onDownloadUpdate speed: " + speed);
-                                Message msg = new Message();
-                                msg.obj = speed;
-                                hSpeedCircle.sendMessage(msg);
-                            }
-                        });
-                        down.Download_Run();
-                        Upload up = new Upload(ip, 80, "/", Config.UPLOAD_SIZE);
-                        up.addUploadTestListener(new IUploadListener() {
-                            @Override
-                            public void onUploadPacketsReceived(float transferRateBitPerSeconds, float wifi_avg, float lte_avg) {
-                                Log.d(TAG, "========= Upload [ OK ]   =============");
-                                Log.d(TAG, "upload transfer rate  : " + transferRateBitPerSeconds + " Mbit/second");
-                                Log.d(TAG, "##################################################################");
-                                UpDownObject data = new UpDownObject(transferRateBitPerSeconds, wifi_avg, lte_avg);
-                                Message msg = new Message();
-                                msg.obj = data;
-                                hUpload.sendMessage(msg);
-                            }
-
-                            @Override
-                            public void onUploadError(int errorCode, String message) {
-
-                            }
-
-                            @Override
-                            public void onUploadProgress(int percent) {
-//                            Log.d(TAG, "Upload  percent: " + percent);
-                            }
-                        });
-//                    up.Upload_Run();
-                        isRunning = false;
-                        return "";
-                    }
-
-                    @Override
-                    protected void onPostExecute(String result) {
-
-                    }
-
-                };
-                atSpeedTest.execute(null, null, null);
+                SelectTest(context);
             } else
                 Toast.makeText(context, "upload or download progress is running", Toast.LENGTH_LONG).show();
         }
@@ -266,6 +198,116 @@ public class SpeedActivity extends Activity {
             }
         });
         dialog.show();
+    }
+
+    public void SelectTest(Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Select Test");
+        final String[] list = context.getResources().getStringArray(R.array.list_select_test);
+        builder.setSingleChoiceItems(list, -1, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, final int which) {
+                dialog.dismiss();
+                tvProgressText.setText(list[which]);
+                atSpeedTest = new AsyncTask<Void, Void, String>() {
+                    @Override
+                    protected String doInBackground(Void... params) {
+                        isRunning = true;
+                        String ip = prefs.getString(Config.PREF_KEY_SERVER_HOST, null);
+                        int port = prefs.getInt(Config.PREF_KEY_SERVER_PORT, 0);
+                        Log.d(TAG, "ip: " + ip + ", port: " + port);
+                        if(list[which].equals("Download")) {
+                            Download down = new Download(ip, port, "/speedtest/", Config.DOWNLOAD_FILE);
+                            down.addDownloadTestListener(new IDownloadListener() {
+                                @Override
+                                public void onDownloadPacketsReceived(float transferRateBitPerSeconds, float wifi_avg, float lte_avg) {
+                                    Log.d(TAG, "Download [ OK ]");
+                                    Log.d(TAG, "download transfer rate  : " + transferRateBitPerSeconds + " Mbit/second");
+                                    Log.d(TAG, "##################################################################");
+
+                                    UpDownObject data = new UpDownObject(transferRateBitPerSeconds, wifi_avg, lte_avg);
+                                    Message msg = new Message();
+                                    msg.obj = data;
+                                    hDownload.sendMessage(msg);
+                                }
+
+                                @Override
+                                public void onDownloadError(int errorCode, String message) {
+
+                                }
+
+                                @Override
+                                public void onDownloadProgress(int percent) {
+//                                  Log.d(TAG, "Download  percent: " + percent);
+                                    if (percent == 0) {
+                                        Message msg = new Message();
+                                        hStatus.sendMessage(msg);
+                                    }
+                                    pbStatus.setProgress(percent);
+                                }
+
+                                @Override
+                                public void onDownloadUpdate(float speed) {
+                                    Log.d(TAG, "onDownloadUpdate speed: " + speed);
+                                    Message msg = new Message();
+                                    msg.obj = speed;
+                                    hSpeedCircle.sendMessage(msg);
+                                }
+                            });
+                            down.Download_Run();
+                        } else if(list[which].equals("Upload")) {
+                            Upload up = new Upload(ip, 80, "/", Config.UPLOAD_SIZE);
+                            up.addUploadTestListener(new IUploadListener() {
+                                @Override
+                                public void onUploadPacketsReceived(float transferRateBitPerSeconds, float wifi_avg, float lte_avg) {
+                                    Log.d(TAG, "========= Upload [ OK ]   =============");
+                                    Log.d(TAG, "upload transfer rate  : " + transferRateBitPerSeconds + " Mbit/second");
+                                    Log.d(TAG, "##################################################################");
+                                    UpDownObject data = new UpDownObject(transferRateBitPerSeconds, wifi_avg, lte_avg);
+                                    Message msg = new Message();
+                                    msg.obj = data;
+                                    hUpload.sendMessage(msg);
+                                }
+
+                                @Override
+                                public void onUploadError(int errorCode, String message) {
+
+                                }
+
+                                @Override
+                                public void onUploadProgress(int percent) {
+//                                  Log.d(TAG, "Upload  percent: " + percent);
+                                    if (percent == 0) {
+                                        Message msg = new Message();
+                                        hStatus.sendMessage(msg);
+                                    }
+                                    pbStatus.setProgress(percent);
+                                }
+
+                                @Override
+                                public void onUploadUpdate(float speed) {
+                                    Log.d(TAG, "onUploadUpdate speed: " + speed);
+                                    Message msg = new Message();
+                                    msg.obj = speed;
+                                    hSpeedCircle.sendMessage(msg);
+                                }
+                            });
+                            up.Upload_Run();
+                        }
+                        isRunning = false;
+                        return "";
+                    }
+
+                    @Override
+                    protected void onPostExecute(String result) {
+
+                    }
+
+                };
+                atSpeedTest.execute(null, null, null);
+            }
+        });
+        builder.show();
     }
 }
 
