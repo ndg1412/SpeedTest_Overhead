@@ -90,12 +90,14 @@ public class Download {
             public void run() {
                 long tmp_wlan = Network.getRxByte(Config.WLAN_IF);
                 long tmp_lte = Network.getRxByte(sLteName);
-                if(tmp_wlan < wlan_rx)
-                    tmp_wlan = Config.ULONG_MAX + wlan_rx;
-                if(tmp_lte < lte_rx)
-                    tmp_lte = Config.ULONG_MAX + lte_rx;
+                long wlan = tmp_wlan;
+                long lte = tmp_lte;
+                if(wlan < wlan_rx)
+                    wlan += Config.ULONG_MAX;
+                if(lte < lte_rx)
+                    lte += Config.ULONG_MAX;
                 if((tmp_wlan != 0) || (tmp_lte != 0)) {
-                    float speed = ((tmp_wlan + tmp_lte - wlan_rx - lte_rx) * 8 / 1000000 * (1000 / (Config.TIMER_SLEEP)));
+                    float speed = ((wlan + lte - wlan_rx - lte_rx) * 8 / 1000000 * (1000 / (Config.TIMER_SLEEP)));
                     lMax.add(speed);
                     downloadTestListenerList.onDownloadUpdate(speed);
                     wlan_rx = tmp_wlan;

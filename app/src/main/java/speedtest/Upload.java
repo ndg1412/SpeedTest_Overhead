@@ -51,30 +51,31 @@ public class Upload {
         for(int i : sizes)
             total_size += i;
         Log.d(TAG, "total_size: " + total_size);
+        if(tiUpload != null) {
+            tiUpload.cancel();
+        }
     }
 
     public String Create_Head(int size) {
-//        String uploadRequest = "POST " + uri + " HTTP/1.1\r\n" + "Host: " + host + "\r\nAccept: */*\r\nContent-Length: " + size + "\r\n\r\n";
-//        Log.d(TAG, "Create_Head uploadRequest size: " + uploadRequest.length());
-        StringBuilder sb = new StringBuilder();
-        sb.append("POST %s HTTP/1.0 \r\n");
-        sb.append("Host :%s \r\n");
-        sb.append("Accept: **/*//*\r\n");
-        sb.append("Content-Length: %s \r\n");
-        sb.append("Connection: keep-alive \r\n");
-        sb.append("Content-Type: application/x-www-form-urlencoded\r\n");
-		sb.append("Content-Type: multipart/form-data; charset=utf-8; boundary=\"another cool boundary\"\r\n");
-        sb.append("Expect: 100-continue\r\n");
-        sb.append("\r\n");
+        String uploadRequest = "POST " + uri + " HTTP/1.1\r\n" + "Host: " + host + "\r\nAccept: */*\r\nContent-Length: " + size + "\r\n\r\n";
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("POST %s HTTP/1.1 \r\n");
+//        sb.append("Host :%s \r\n");
+//        sb.append("Accept: */*\r\n");
+//        sb.append("Content-Length: %s \r\n");
+//        sb.append("Content-Type: application/x-www-form-urlencoded\r\n");
+//        sb.append("Expect: 100-continue\r\n");
+//        sb.append("\r\n");
+//
+//        String uploadRequest = String.format(sb.toString(), uri, host, size);
 
-        String uploadRequest = String.format(sb.toString(), uri, host, size);
         return uploadRequest;
     }
 
     public void Upload_Run() {
         uploadTestListenerList.onUploadProgress(0);
 
-        BlockingQueue queue = new LinkedBlockingQueue(6);
+        BlockingQueue queue = new LinkedBlockingQueue(3);
         Producer procedure = new Producer(queue, sizes);
         Consumer consumer = new Consumer(queue, total_size);
         Thread thPro = new Thread(procedure);
@@ -91,11 +92,13 @@ public class Upload {
             public void run() {
                 long tmp_wlan = Network.getTxByte(Config.WLAN_IF);
                 long tmp_lte = Network.getTxByte(sLteName);
-                if(tmp_wlan < wlan_tx)
-                    tmp_wlan = Config.ULONG_MAX + wlan_tx;
-                if(tmp_lte < lte_tx)
-                    tmp_lte = Config.ULONG_MAX + lte_tx;
-                float speed = ((tmp_wlan + tmp_lte - wlan_tx - lte_tx)*8/1000000*(1000/Config.TIMER_SLEEP));
+                long wlan = tmp_wlan;
+                long lte = tmp_lte;
+                if(wlan < wlan_tx)
+                    wlan += Config.ULONG_MAX;
+                if(lte < lte_tx)
+                    lte += Config.ULONG_MAX;
+                float speed = ((wlan + lte - wlan_tx - lte_tx)*8/1000000*(1000/Config.TIMER_SLEEP));
                 lMax.add(speed);
                 uploadTestListenerList.onUploadUpdate(speed);
                 wlan_tx = tmp_wlan;
@@ -118,9 +121,9 @@ public class Upload {
 //        Log.d(TAG, "finish_size: " + finish_size);
 //        float transfer = (finish_size * 8) / ((timeEnd - timeStart) / 1000f)/1000000;
         if(wlan_tx_end < wlan_tx_first)
-            wlan_tx_end = Config.ULONG_MAX + wlan_tx_end;
+            wlan_tx_end += Config.ULONG_MAX;
         if(lte_tx_end < lte_tx_first)
-            lte_tx_end = Config.ULONG_MAX + lte_tx_end;
+            lte_tx_end += Config.ULONG_MAX;
         float transfer_wifi = ((wlan_tx_end - wlan_tx_first) * 8) / ((timeEnd - timeStart) / 1000f)/1000000;
         float transfer_lte = ((lte_tx_end - lte_tx_first) * 8) / ((timeEnd - timeStart) / 1000f)/1000000;
         uploadTestListenerList.onUploadPacketsReceived(transferRate_bps, transfer_wifi, transfer_lte);
