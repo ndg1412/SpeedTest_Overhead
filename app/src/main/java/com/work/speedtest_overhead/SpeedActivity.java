@@ -39,6 +39,7 @@ import speedtest.Upload;
 public class SpeedActivity extends Activity {
     private static final String TAG = "SpeedActivity";
     Context context;
+    ImageButton ibSetting;
     RelativeLayout rlDownloadSpeed, rlUploadSpeed, rlProgress;
     TextView tvDownloadMaxResult, tvDownloadAvgResult, tvDownloadWifi, tvDownloadLte;
     TextView tvUploadMaxResult, tvUploadAvgResult, tvUploadWifi, tvUploadLte;
@@ -57,6 +58,7 @@ public class SpeedActivity extends Activity {
         context = this;
 
         prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        ibSetting = (ImageButton) findViewById(R.id.ibSetting);
         rlDownloadSpeed = (RelativeLayout) findViewById(R.id.rlDownloadSpeed);
         rlUploadSpeed = (RelativeLayout) findViewById(R.id.rlUploadSpeed);
         tvDownloadMaxResult = (TextView) findViewById(R.id.tvDownloadMaxResult);
@@ -74,8 +76,12 @@ public class SpeedActivity extends Activity {
         svSpeedDisplay = (SpeedView) findViewById(R.id.svSpeedDisplay);
         pbStatus = (ProgressBar) findViewById(R.id.pbStatus);
         ibStartSpeed = (ImageButton) findViewById(R.id.ibStartSpeed);
+        ibSetting.setOnClickListener(settingListener);
         ibStartSpeed.setOnClickListener(startListener);
-        SettingServer(context);
+        String ip = prefs.getString(Config.PREF_KEY_SERVER_HOST, null);
+        int port = prefs.getInt(Config.PREF_KEY_SERVER_PORT, 0);
+        if((ip == null) || (port == 0))
+            SettingServer(context);
     }
 
     @Override
@@ -101,11 +107,11 @@ public class SpeedActivity extends Activity {
             tvProgressText.setText("Download");
             rlDownloadSpeed.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
-            tvDownloadMaxResult.setText(String.format("Max:     %.2fMbps", object.getMax()));
-            tvDownloadAvgResult.setText(String.format("Avg:     %.2fMbps", object.getAvg()));
-            tvDownloadWifi.setText(String.format("Wifi:     %.2fMbps", object.getWifi()));
-            tvDownloadLte.setText(String.format("Lte:     %.2fMbps", object.getLte()));
-            svSpeedDisplay.setValue(0);
+            tvDownloadMaxResult.setText(String.format("%.2f", object.getMax()));
+            tvDownloadAvgResult.setText(String.format("%.2f", object.getAvg()));
+            tvDownloadWifi.setText(String.format("%.2f", object.getWifi()));
+            tvDownloadLte.setText(String.format("%.2f", object.getLte()));
+            svSpeedDisplay.setValue(object.getMax());
         }
     };
 
@@ -115,11 +121,11 @@ public class SpeedActivity extends Activity {
             tvProgressText.setText("Upload");
             rlUploadSpeed.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
-            tvUploadMaxResult.setText(String.format("Max:     %.2fMbps", object.getMax()));
-            tvUploadAvgResult.setText(String.format("Avg:     %.2fMbps", object.getAvg()));
-            tvUploadWifi.setText(String.format("Wifi:     %.2fMbps", object.getWifi()));
-            tvUploadLte.setText(String.format("Lte:     %.2fMbps", object.getLte()));
-            svSpeedDisplay.setValue(0);
+            tvUploadMaxResult.setText(String.format("%.2f", object.getMax()));
+            tvUploadAvgResult.setText(String.format("%.2f", object.getAvg()));
+            tvUploadWifi.setText(String.format("%.2f", object.getWifi()));
+            tvUploadLte.setText(String.format("%.2f", object.getLte()));
+            svSpeedDisplay.setValue(object.getMax());
         }
     };
 
@@ -138,6 +144,12 @@ public class SpeedActivity extends Activity {
         }
     };
 
+    public OnClickListener settingListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            SettingServer(context);
+        }
+    };
 
     public OnClickListener startListener = new OnClickListener() {
         @Override
