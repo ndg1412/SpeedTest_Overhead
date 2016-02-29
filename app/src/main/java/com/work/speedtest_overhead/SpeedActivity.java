@@ -19,6 +19,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,9 +41,10 @@ public class SpeedActivity extends Activity {
     private static final String TAG = "SpeedActivity";
     Context context;
     ImageButton ibSetting;
-    RelativeLayout rlDownloadSpeed, rlUploadSpeed, rlProgress;
-    TextView tvDownloadMaxResult, tvDownloadAvgResult, tvDownloadWifi, tvDownloadLte;
-    TextView tvUploadMaxResult, tvUploadAvgResult, tvUploadWifi, tvUploadLte;
+    RelativeLayout rlSpeed, rlProgress;
+    TableLayout tlInterface;
+    TextView tvMaxResult, tvAvgResult, tvWifi, tvLte;
+    TextView tvTitleSpeed;
     TextView tvProgressText;
     ProgressBar pbStatus;
     ImageButton ibStartSpeed;
@@ -59,16 +61,13 @@ public class SpeedActivity extends Activity {
 
         prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         ibSetting = (ImageButton) findViewById(R.id.ibSetting);
-        rlDownloadSpeed = (RelativeLayout) findViewById(R.id.rlDownloadSpeed);
-        rlUploadSpeed = (RelativeLayout) findViewById(R.id.rlUploadSpeed);
-        tvDownloadMaxResult = (TextView) findViewById(R.id.tvDownloadMaxResult);
-        tvDownloadAvgResult = (TextView) findViewById(R.id.tvDownloadAvgResult);
-        tvDownloadWifi = (TextView) findViewById(R.id.tvDownloadWifi);
-        tvDownloadLte = (TextView) findViewById(R.id.tvDownloadLte);
-        tvUploadMaxResult = (TextView) findViewById(R.id.tvUploadMaxResult);
-        tvUploadAvgResult = (TextView) findViewById(R.id.tvUploadAvgResult);
-        tvUploadWifi = (TextView) findViewById(R.id.tvUploadWifi);
-        tvUploadLte = (TextView) findViewById(R.id.tvUploadLte);
+        rlSpeed = (RelativeLayout) findViewById(R.id.rlSpeed);
+        tlInterface = (TableLayout) findViewById(R.id.tlInterface);
+        tvTitleSpeed = (TextView) findViewById(R.id.tvTitleSpeed);
+        tvMaxResult = (TextView) findViewById(R.id.tvMaxResult);
+        tvAvgResult = (TextView) findViewById(R.id.tvAvgResult);
+        tvWifi = (TextView) findViewById(R.id.tvWifi);
+        tvLte = (TextView) findViewById(R.id.tvLte);
 
         rlProgress = (RelativeLayout) findViewById(R.id.rlProgress);
         tvProgressText = (TextView) findViewById(R.id.tvProgressText);
@@ -104,13 +103,15 @@ public class SpeedActivity extends Activity {
     final Handler hDownload = new Handler() {
         public void handleMessage(Message msg) {
             rlProgress.setVisibility(View.GONE);
+            tvTitleSpeed.setText("Download");
             tvProgressText.setText("Download");
-            rlDownloadSpeed.setVisibility(View.VISIBLE);
+            rlSpeed.setVisibility(View.VISIBLE);
+            tlInterface.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
-            tvDownloadMaxResult.setText(String.format("%.2f", object.getMax()));
-            tvDownloadAvgResult.setText(String.format("%.2f", object.getAvg()));
-            tvDownloadWifi.setText(String.format("%.2f", object.getWifi()));
-            tvDownloadLte.setText(String.format("%.2f", object.getLte()));
+            tvMaxResult.setText(String.format("%.2f", object.getMax()));
+            tvAvgResult.setText(String.format("%.2f", object.getAvg()));
+            tvWifi.setText(String.format("%.2f", object.getWifi()));
+            tvLte.setText(String.format("%.2f", object.getLte()));
             svSpeedDisplay.setValue(object.getMax());
         }
     };
@@ -118,13 +119,15 @@ public class SpeedActivity extends Activity {
     final Handler hUpload = new Handler() {
         public void handleMessage(Message msg) {
             rlProgress.setVisibility(View.GONE);
+            tvTitleSpeed.setText("Upload");
             tvProgressText.setText("Upload");
-            rlUploadSpeed.setVisibility(View.VISIBLE);
+            rlSpeed.setVisibility(View.VISIBLE);
+            tlInterface.setVisibility(View.VISIBLE);
             UpDownObject object = (UpDownObject) msg.obj;
-            tvUploadMaxResult.setText(String.format("%.2f", object.getMax()));
-            tvUploadAvgResult.setText(String.format("%.2f", object.getAvg()));
-            tvUploadWifi.setText(String.format("%.2f", object.getWifi()));
-            tvUploadLte.setText(String.format("%.2f", object.getLte()));
+            tvMaxResult.setText(String.format("%.2f", object.getMax()));
+            tvAvgResult.setText(String.format("%.2f", object.getAvg()));
+            tvWifi.setText(String.format("%.2f", object.getWifi()));
+            tvLte.setText(String.format("%.2f", object.getLte()));
             svSpeedDisplay.setValue(object.getMax());
         }
     };
@@ -154,10 +157,68 @@ public class SpeedActivity extends Activity {
     public OnClickListener startListener = new OnClickListener() {
         @Override
         public void onClick(View v) {
-            rlDownloadSpeed.setVisibility(View.GONE);
-            rlUploadSpeed.setVisibility(View.GONE);
-
+            rlSpeed.setVisibility(View.GONE);
+            tlInterface.setVisibility(View.GONE);
             if(!isRunning) {
+                /*
+                atSpeedTest = new AsyncTask<Void, Void, String>() {
+                    @Override
+                    protected String doInBackground(Void... params) {
+                        isRunning = true;
+                        String ip = prefs.getString(Config.PREF_KEY_SERVER_HOST, null);
+                        int port = prefs.getInt(Config.PREF_KEY_SERVER_PORT, 0);
+                        Log.d(TAG, "ip: " + ip + ", port: " + port);
+                        Download down = new Download(ip, port, "/speedtest/", Config.DOWNLOAD_FILE);
+                        down.addDownloadTestListener(new IDownloadListener() {
+                            @Override
+                            public void onDownloadPacketsReceived(float transferRateBitPerSeconds, float wifi_avg, float lte_avg) {
+                                Log.d(TAG, "Download [ OK ]");
+                                Log.d(TAG, "download transfer rate  : " + transferRateBitPerSeconds + " Mbit/second");
+                                Log.d(TAG, "##################################################################");
+
+                                UpDownObject data = new UpDownObject(transferRateBitPerSeconds, wifi_avg, lte_avg);
+                                Message msg = new Message();
+                                msg.obj = data;
+                                hDownload.sendMessage(msg);
+                            }
+
+                            @Override
+                            public void onDownloadError(int errorCode, String message) {
+
+                            }
+
+                            @Override
+                            public void onDownloadProgress(int percent) {
+//                                  Log.d(TAG, "Download  percent: " + percent);
+                                if (percent == 0) {
+                                    Message msg = new Message();
+                                    hStatus.sendMessage(msg);
+                                }
+                                pbStatus.setProgress(percent);
+                            }
+
+                            @Override
+                            public void onDownloadUpdate(float speed) {
+                                Log.d(TAG, "onDownloadUpdate speed: " + speed);
+                                Message msg = new Message();
+                                msg.obj = speed;
+                                hSpeedCircle.sendMessage(msg);
+                            }
+                        });
+                        down.Download_Run();
+
+                        isRunning = false;
+                        return "";
+                    }
+
+                    @Override
+                    protected void onPostExecute(String result) {
+
+                    }
+
+                };
+                atSpeedTest.execute(null, null, null);
+                */
                 SelectTest(context);
             } else
                 Toast.makeText(context, "upload or download progress is running", Toast.LENGTH_LONG).show();

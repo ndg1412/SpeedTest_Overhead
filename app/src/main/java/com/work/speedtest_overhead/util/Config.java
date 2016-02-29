@@ -46,7 +46,7 @@ public class Config {
     public static String FILE_CONFIG = "speedtest_servers_static.xml";
     public static int MAX_BUFFER = 10240;
     public static String WLAN_IF = "wlan0";
-    public static long TIMER_SLEEP = 500;
+    public static long TIMER_SLEEP = 1000;
     public static int RADIUS = 120; //in dpi unit
 
     public static long ULONG_MAX = 4294967295l;
